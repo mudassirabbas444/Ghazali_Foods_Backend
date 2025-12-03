@@ -13,6 +13,9 @@ import { getProductById, updateProductStock } from "../../database/db.product.js
 import { applyCoupon } from "../../database/db.coupon.js";
 import { sendEmail } from "../../../services/emailService.js";
 import { env } from "../../../config/env.js";
+import Order from "../../models/Order.js";
+import User from "../../models/User.js";
+import Product from "../../models/Product.js";
 
 const createOrderService = async (req) => {
   try {
@@ -153,7 +156,6 @@ const createOrderService = async (req) => {
     
     // Send order confirmation email
     try {
-      const User = (await import("../../models/User.js")).default;
       const user = await User.findById(userId);
       if (user && user.email) {
         await sendEmail({
@@ -443,24 +445,33 @@ const cancelOrderService = async (req) => {
 
 const getOrderStatsService = async (req) => {
   try {
-    const startDate = req?.query?.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const endDate = req?.query?.endDate || new Date();
+    // Calculate date range (last 30 days by default)
+    const endDate = req?.query?.endDate ? new Date(req.query.endDate) : new Date();
+    const startDate = req?.query?.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    
+    // Validate dates
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new Error('Invalid date format');
+    }
+    
+    // Ensure startDate is before endDate
+    if (startDate > endDate) {
+      throw new Error('Start date must be before end date');
+    }
     
     const stats = await getOrderStats(startDate, endDate);
     
     // Get additional stats
-    const Order = (await import("../../models/Order.js")).default;
-    const User = (await import("../../models/User.js")).default;
-    const Product = (await import("../../models/Product.js")).default;
-    
-    const totalCustomers = await User.countDocuments({ isActive: true });
-    const totalProducts = await Product.countDocuments({ isActive: true });
+    const totalCustomers = await User.countDocuments({ isActive: { $ne: false } });
+    const totalProducts = await Product.countDocuments({ isActive: { $ne: false } });
     const pendingOrders = await Order.countDocuments({ status: 'pending' });
     
     // Calculate previous period stats for comparison
+    const periodDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const previousStartDate = new Date(startDate);
-    previousStartDate.setDate(previousStartDate.getDate() - (endDate - startDate) / (1000 * 60 * 60 * 24));
-    const previousStats = await getOrderStats(previousStartDate, startDate);
+    previousStartDate.setDate(previousStartDate.getDate() - periodDays);
+    const previousEndDate = new Date(startDate);
+    const previousStats = await getOrderStats(previousStartDate, previousEndDate);
     
     const revenueChange = previousStats.totalRevenue > 0
       ? ((stats.totalRevenue - previousStats.totalRevenue) / previousStats.totalRevenue) * 100
@@ -476,9 +487,9 @@ const getOrderStatsService = async (req) => {
       data: {
         totalRevenue: stats.totalRevenue || 0,
         totalOrders: stats.totalOrders || 0,
-        totalCustomers,
-        totalProducts,
-        pendingOrders,
+        totalCustomers: totalCustomers || 0,
+        totalProducts: totalProducts || 0,
+        pendingOrders: pendingOrders || 0,
         averageOrderValue: stats.averageOrderValue || 0,
         revenueChange: Math.round(revenueChange * 10) / 10,
         ordersChange: Math.round(ordersChange * 10) / 10,
@@ -488,10 +499,11 @@ const getOrderStatsService = async (req) => {
       }
     };
   } catch (error) {
+    console.error('Error in getOrderStatsService:', error);
     return {
       success: false,
       statusCode: 500,
-      message: error.message
+      message: error.message || 'Error fetching order stats'
     };
   }
 };
