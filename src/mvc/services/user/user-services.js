@@ -306,7 +306,11 @@ const getAllUsersService = async (req) => {
             success: true,
             message: "Users fetched successfully",
             statusCode: 200,
-            data: result
+            users: result.users || [],
+            total: result.total || 0,
+            page: result.page || 1,
+            pages: result.pages || 1,
+            data: result // Keep for backward compatibility
         };
     }
     catch(error) {

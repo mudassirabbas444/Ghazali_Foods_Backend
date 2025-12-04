@@ -7,6 +7,10 @@ import { upload } from "../../../services/uploadService.js";
 
 const router = express.Router();
 
+// Admin routes (must come before parameterized routes)
+router.get(reviewRoutes.GET_ALL_REVIEWS, auth, isAdmin, reviewController.getAllReviewsController);
+router.put(reviewRoutes.APPROVE_REVIEW, auth, isAdmin, reviewController.approveReviewController);
+
 // Public routes
 router.get(reviewRoutes.GET_REVIEWS, reviewController.getReviewsController);
 
@@ -15,9 +19,6 @@ router.get(reviewRoutes.GET_USER_REVIEWS, auth, reviewController.getUserReviewsC
 router.post(reviewRoutes.CREATE_REVIEW, auth, upload.array('images', 5), reviewController.createReviewController);
 router.put(reviewRoutes.UPDATE_REVIEW, auth, upload.array('images', 5), reviewController.updateReviewController);
 router.delete(reviewRoutes.DELETE_REVIEW, auth, reviewController.deleteReviewController);
-
-// Admin routes
-router.put(reviewRoutes.APPROVE_REVIEW, auth, isAdmin, reviewController.approveReviewController);
 
 export { router as reviewRouter };
 

@@ -449,6 +449,7 @@ const getOrderStatsService = async (req) => {
     const endDate = req?.query?.endDate ? new Date(req.query.endDate) : new Date();
     const startDate = req?.query?.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     
+    
     // Validate dates
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       throw new Error('Invalid date format');
@@ -460,27 +461,31 @@ const getOrderStatsService = async (req) => {
     }
     
     const stats = await getOrderStats(startDate, endDate);
-    
     // Get additional stats
     const totalCustomers = await User.countDocuments({ isActive: { $ne: false } });
     const totalProducts = await Product.countDocuments({ isActive: { $ne: false } });
+
+    
     const pendingOrders = await Order.countDocuments({ status: 'pending' });
+   
     
     // Calculate previous period stats for comparison
     const periodDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const previousStartDate = new Date(startDate);
-    previousStartDate.setDate(previousStartDate.getDate() - periodDays);
+    previousStartDate.setTime(previousStartDate.getTime() - (periodDays * 24 * 60 * 60 * 1000));
     const previousEndDate = new Date(startDate);
+    previousEndDate.setTime(previousEndDate.getTime() - 1); // Just before startDate
+    
     const previousStats = await getOrderStats(previousStartDate, previousEndDate);
     
-    const revenueChange = previousStats.totalRevenue > 0
+    const revenueChange = previousStats && previousStats.totalRevenue > 0
       ? ((stats.totalRevenue - previousStats.totalRevenue) / previousStats.totalRevenue) * 100
-      : 0;
-    const ordersChange = previousStats.totalOrders > 0
+      : (stats.totalRevenue > 0 ? 100 : 0); // If no previous revenue but current exists, show 100% increase
+    const ordersChange = previousStats && previousStats.totalOrders > 0
       ? ((stats.totalOrders - previousStats.totalOrders) / previousStats.totalOrders) * 100
-      : 0;
+      : (stats.totalOrders > 0 ? 100 : 0); // If no previous orders but current exists, show 100% increase
     
-    return {
+    const result = {
       success: true,
       message: "Order stats fetched successfully",
       statusCode: 200,
@@ -498,8 +503,10 @@ const getOrderStatsService = async (req) => {
         conversionRate: 0, // Can be calculated if needed
       }
     };
+    
+    return result;
   } catch (error) {
-    console.error('Error in getOrderStatsService:', error);
+    console.error('Error in getOrderStatsService:', error); 
     return {
       success: false,
       statusCode: 500,

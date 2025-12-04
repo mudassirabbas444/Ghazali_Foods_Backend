@@ -82,9 +82,15 @@ const cancelOrderController = async (req, res) => {
 
 const getOrderStatsController = async (req, res) => {
   try {
+  
+    
     const result = await getOrderStatsService(req);
+    
+
+    
     return res.status(result.statusCode).json(result);
   } catch (error) {
+    console.error('Error in getOrderStatsController:', error);
     return res.status(500).json({
       success: false,
       message: error.message

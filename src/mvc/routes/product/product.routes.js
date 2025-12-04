@@ -7,16 +7,18 @@ import { upload } from "../../../services/uploadService.js";
 
 const router = express.Router();
 
+// Admin routes - MUST come before parameterized routes to avoid conflicts
+router.get(productRoutes.GET_LOW_STOCK, auth, isAdmin, productController.getLowStockController);
+
 // Public routes - Specific routes must come before parameterized routes
 router.get(productRoutes.GET_PRODUCTS, productController.getProductsController);
 router.get(productRoutes.GET_FEATURED, productController.getFeaturedProductsController);
 router.get(productRoutes.GET_BEST_SELLERS, productController.getBestSellersController);
 router.get(productRoutes.GET_NEW_ARRIVALS, productController.getNewArrivalsController);
 router.get(productRoutes.GET_PRODUCT_BY_SLUG, productController.getProductController);
-router.get(productRoutes.GET_PRODUCT, productController.getProductController);
 
-// Admin routes - Specific routes must come before parameterized routes
-router.get(productRoutes.GET_LOW_STOCK, auth, isAdmin, productController.getLowStockController);
+// Parameterized routes - Must come last
+router.get(productRoutes.GET_PRODUCT, productController.getProductController);
 router.post(productRoutes.CREATE_PRODUCT, auth, isAdmin, upload.array('images', 10), productController.createProductController);
 router.put(productRoutes.UPDATE_STOCK, auth, isAdmin, productController.updateStockController);
 router.put(productRoutes.UPDATE_PRODUCT, auth, isAdmin, upload.array('images', 10), productController.updateProductController);

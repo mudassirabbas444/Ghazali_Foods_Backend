@@ -21,7 +21,8 @@ const getCoupons = async (req) => {
       success: true,
       message: "Coupons fetched successfully",
       statusCode: 200,
-      data: coupons
+      coupons: coupons || [],
+      data: coupons // Keep for backward compatibility
     };
   } catch (error) {
     return {

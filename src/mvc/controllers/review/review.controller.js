@@ -4,7 +4,8 @@ import {
   createReviewService,
   updateReviewService,
   deleteReviewService,
-  approveReviewService
+  approveReviewService,
+  getAllReviewsService
 } from "../../services/review/index.js";
 
 const getReviewsController = async (req, res) => {
@@ -79,12 +80,25 @@ const approveReviewController = async (req, res) => {
   }
 };
 
+const getAllReviewsController = async (req, res) => {
+  try {
+    const result = await getAllReviewsService(req);
+    return res.status(result.statusCode).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 export default {
   getReviewsController,
   getUserReviewsController,
   createReviewController,
   updateReviewController,
   deleteReviewController,
-  approveReviewController
+  approveReviewController,
+  getAllReviewsController
 };
 

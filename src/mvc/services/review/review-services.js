@@ -7,7 +7,8 @@ import {
   deleteReview,
   approveReview,
   getReviewByOrder,
-  getReviewByUserAndProduct
+  getReviewByUserAndProduct,
+  getAllReviews
 } from "../../database/db.review.js";
 
 const getReviews = async (req) => {
@@ -332,12 +333,44 @@ const approveReviewService = async (req) => {
   }
 };
 
+const getAllReviewsService = async (req) => {
+  try {
+    const options = {
+      page: req?.query?.page || 1,
+      limit: req?.query?.limit || 20,
+      isApproved: req?.query?.isApproved !== undefined ? req.query.isApproved === 'true' : undefined,
+      rating: req?.query?.rating ? parseInt(req.query.rating) : undefined,
+      search: req?.query?.search || ''
+    };
+    
+    const result = await getAllReviews(options);
+    
+    return {
+      success: true,
+      message: "Reviews fetched successfully",
+      statusCode: 200,
+      reviews: result.reviews || [],
+      total: result.total || 0,
+      page: result.page || 1,
+      pages: result.pages || 1,
+      data: result // Keep for backward compatibility
+    };
+  } catch (error) {
+    return {
+      success: false,
+      statusCode: 500,
+      message: error.message
+    };
+  }
+};
+
 export default {
   getReviews,
   getUserReviewsService,
   createReviewService,
   updateReviewService,
   deleteReviewService,
-  approveReviewService
+  approveReviewService,
+  getAllReviewsService
 };
 

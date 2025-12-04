@@ -2,6 +2,7 @@ import Review from "../models/Review.js";
 import Product from "../models/Product.js";
 import { ensureConnection } from '../../utils/waitForConnection.js';
 
+
 export const createReview = async (reviewData) => {
   try {
     await ensureConnection();
@@ -69,6 +70,50 @@ export const getUserReviews = async (userId) => {
       .sort({ createdAt: -1 });
   } catch (error) {
     throw new Error("Error fetching user reviews: " + error.message);
+  }
+};
+
+export const getAllReviews = async (options = {}) => {
+  try {
+    await ensureConnection();
+    const page = parseInt(options.page) || 1;
+    const limit = parseInt(options.limit) || 20;
+    const skip = (page - 1) * limit;
+    
+    const query = {};
+    
+    if (options.isApproved !== undefined) {
+      query.isApproved = options.isApproved;
+    }
+    
+    if (options.rating) {
+      query.rating = parseInt(options.rating);
+    }
+    
+    if (options.search) {
+      query.$or = [
+        { comment: { $regex: options.search, $options: 'i' } }
+      ];
+    }
+    
+    const reviews = await Review.find(query)
+      .populate('user', 'fullName email avatar')
+      .populate('product', 'name images thumbnail')
+      .populate('order', 'orderNumber')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    const total = await Review.countDocuments(query);
+    
+    return {
+      reviews,
+      total,
+      page,
+      pages: Math.ceil(total / limit)
+    };
+  } catch (error) {
+    throw new Error("Error fetching all reviews: " + error.message);
   }
 };
 

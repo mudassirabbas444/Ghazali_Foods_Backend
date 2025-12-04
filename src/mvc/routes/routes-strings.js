@@ -98,6 +98,7 @@ export const bannerRoutes = {
 
 export const reviewRoutes = {
     GET_REVIEWS: "/product/:productId",
+    GET_ALL_REVIEWS: "/",
     GET_USER_REVIEWS: "/my-reviews",
     CREATE_REVIEW: "/",
     UPDATE_REVIEW: "/:id",

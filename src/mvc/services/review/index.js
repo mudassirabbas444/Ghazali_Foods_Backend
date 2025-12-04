@@ -6,6 +6,7 @@ export const {
   createReviewService,
   updateReviewService,
   deleteReviewService,
-  approveReviewService
+  approveReviewService,
+  getAllReviewsService
 } = reviewServices;
 
