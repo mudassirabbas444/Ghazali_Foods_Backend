@@ -9,13 +9,13 @@ import {
 
 const registerUser = async (req) => {
     try {
-        const { fullName, email, phone, password, walletInfo, referredBy } = req.body;
+        const { fullName, email, phone, password } = req.body;
 
         // Validate required fields
-        if (!fullName || !email || !phone || !password) {
+        if (!fullName || !email || !password) {
             return {
                 success: false,
-                message: "Full name, email, phone, and password are required",
+                message: "Full name, email, and password are required",
                 statusCode: 400
             };
         }
@@ -30,44 +30,24 @@ const registerUser = async (req) => {
             };
         }
 
-        // Check if phone already exists
-        const existingPhone = await getUserByPhone(phone);
-        if (existingPhone) {
-            return {
-                success: false,
-                message: "User with this phone number already exists",
-                statusCode: 400
-            };
+        // Check if phone already exists (only if provided)
+        if (phone) {
+            const existingPhone = await getUserByPhone(phone);
+            if (existingPhone) {
+                return {
+                    success: false,
+                    message: "User with this phone number already exists",
+                    statusCode: 400
+                };
+            }
         }
 
-        // Validate referredBy - NOW REQUIRED
-        if (!referredBy) {
-            return {
-                success: false,
-                message: "Referral code is required",
-                statusCode: 400
-            };
-        }
-
-        const sponsor = await getUserByRefCode(referredBy);
-        if (!sponsor) {
-            return {
-                success: false,
-                message: "Invalid referral code",
-                statusCode: 400
-            };
-        }
-        const sponsorId = sponsor?._id;
-
-        // Create user (this will handle refCode generation and referral chain)
-        // referredBy is now required, so sponsorId will always be set
+        // Create user (phone is optional)
         const user = await createUser({
             fullName,
             email,
-            phone,
-            password,
-            walletInfo: walletInfo || "",
-            referredBy: sponsorId
+            phone: phone || null,
+            password
         });
 
         // Generate token
@@ -81,14 +61,10 @@ const registerUser = async (req) => {
                 id: user._id,
                 fullName: user.fullName,
                 email: user.email,
-                phone: user.phone,
-                refCode: user.refCode,
-                walletInfo: user.walletInfo,
-                totalInvestment: user.totalInvestment,
-                totalEarnings: user.totalEarnings,
-                availableBalance: user.availableBalance,
-                rank: user.rank,
-                teamCount: user.teamCount,
+                phone: user.phone || null,
+                avatar: user.avatar || null,
+                emailVerified: user.emailVerified || false,
+                verified: user.verified || false,
                 isActive: user.isActive,
                 isAdmin: user.isAdmin
             },
@@ -156,14 +132,10 @@ const loginUser = async (req) => {
                 id: user._id,
                 fullName: user.fullName,
                 email: user.email,
-                phone: user.phone,
-                refCode: user.refCode,
-                walletInfo: user.walletInfo,
-                totalInvestment: user.totalInvestment,
-                totalEarnings: user.totalEarnings,
-                availableBalance: user.availableBalance,
-                rank: user.rank,
-                teamCount: user.teamCount,
+                phone: user.phone || null,
+                avatar: user.avatar || null,
+                emailVerified: user.emailVerified || false,
+                verified: user.verified || false,
                 isActive: user.isActive,
                 isAdmin: user.isAdmin
             },

@@ -21,7 +21,7 @@ const productSchema = new mongoose.Schema(
     variants: [productVariantSchema],
     
     // Images
-    images: [{ type: String, required: true }],
+    images: { type: [String], default: [] }, // Array of image URLs
     thumbnail: { type: String },
     
     // Pricing (base price - can be overridden by variants)

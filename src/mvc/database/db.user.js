@@ -93,10 +93,10 @@ export const addToReferralChain = async (newUserId, sponsorId) => {
     }
 };
 
-// Create user with referral chain logic (updated for investment system)
+// Create user (simplified for e-commerce)
 export const createUser = async (userData) => {
     try {
-        const { password, referredBy, ...otherData } = userData;
+        const { password, ...otherData } = userData;
         
         // Hash password if provided (for regular registration)
         // For Google OAuth users, password may be undefined
@@ -112,24 +112,14 @@ export const createUser = async (userData) => {
             hashedPassword = await bcrypt.hash(randomPassword, saltRounds);
         }
         
-        // Generate unique refCode
-        const refCode = await generateUniqueRefCode();
-        
         // Prepare user data
         const newUserData = {
             ...otherData,
-            password: hashedPassword,
-            refCode,
-            referredBy: referredBy || null
+            password: hashedPassword
         };
         
         const user = new User(newUserData);
         const savedUser = await user.save();
-        
-        // If referredBy is provided, add to referral chain
-        if (referredBy) {
-            await addToReferralChain(savedUser._id, referredBy);
-        }
         
         return savedUser;
     } catch (error) {

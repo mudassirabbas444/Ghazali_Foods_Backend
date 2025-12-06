@@ -107,6 +107,66 @@ const createProductService = async (req) => {
   try {
     const productData = req?.body;
     
+    // Validate required fields
+    if (!productData.name) {
+      return {
+        success: false,
+        message: "Product name is required",
+        statusCode: 400
+      };
+    }
+    
+    if (!productData.description) {
+      return {
+        success: false,
+        message: "Product description is required",
+        statusCode: 400
+      };
+    }
+    
+    if (!productData.category) {
+      return {
+        success: false,
+        message: "Product category is required",
+        statusCode: 400
+      };
+    }
+    
+    // Validate category is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(productData.category)) {
+      return {
+        success: false,
+        message: "Invalid category ID",
+        statusCode: 400
+      };
+    }
+    
+    if (productData.basePrice === undefined || productData.basePrice === null) {
+      return {
+        success: false,
+        message: "Product base price is required",
+        statusCode: 400
+      };
+    }
+    
+    // Parse JSON strings if needed (common with form-data)
+    if (typeof productData.variants === 'string') {
+      try {
+        productData.variants = JSON.parse(productData.variants);
+      } catch (e) {
+        // If parsing fails, set to empty array
+        productData.variants = [];
+      }
+    }
+    if (typeof productData.images === 'string') {
+      try {
+        productData.images = JSON.parse(productData.images);
+      } catch (e) {
+        // If parsing fails, treat as single image URL
+        productData.images = [productData.images];
+      }
+    }
+    
     // Handle image uploads if provided
     if (req?.files && req.files.length > 0) {
       const { uploadMultipleImages } = await import("../../../services/uploadService.js");
@@ -117,6 +177,24 @@ const createProductService = async (req) => {
       );
       productData.images = uploadResult.images.map(img => img.url);
       productData.thumbnail = uploadResult.images[0]?.url;
+    } else if (productData.images) {
+      // If images are provided in body (as URLs), use them
+      // Ensure it's an array
+      if (typeof productData.images === 'string') {
+        productData.images = [productData.images];
+      }
+      if (Array.isArray(productData.images) && productData.images.length > 0) {
+        productData.thumbnail = productData.thumbnail || productData.images[0];
+      }
+    }
+    
+    // Ensure images array is not empty (business requirement)
+    if (!productData.images || productData.images.length === 0) {
+      return {
+        success: false,
+        message: "At least one product image is required",
+        statusCode: 400
+      };
     }
     
     const product = await createProduct(productData);
@@ -128,10 +206,11 @@ const createProductService = async (req) => {
       data: product
     };
   } catch (error) {
+    console.error('Create product error:', error);
     return {
       success: false,
       statusCode: 500,
-      message: error.message
+      message: error.message || "Internal server error. Please try again later."
     };
   }
 };
@@ -140,6 +219,25 @@ const updateProductService = async (req) => {
   try {
     const { id } = req?.params;
     const updateData = req?.body;
+    
+    // Validate product ID
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return {
+        success: false,
+        message: "Invalid product ID",
+        statusCode: 400
+      };
+    }
+    
+    // Check if product exists first
+    const existingProduct = await getProductById(id);
+    if (!existingProduct) {
+      return {
+        success: false,
+        message: "Product not found",
+        statusCode: 404
+      };
+    }
     
     // Handle image uploads if provided
     if (req?.files && req.files.length > 0) {
@@ -155,7 +253,30 @@ const updateProductService = async (req) => {
       }
     }
     
-    const previousProduct = await getProduct(id);
+    // Parse JSON strings if needed (common with form-data)
+    if (typeof updateData.category === 'string' && mongoose.Types.ObjectId.isValid(updateData.category)) {
+      updateData.category = updateData.category;
+    }
+    if (typeof updateData.subCategory === 'string' && updateData.subCategory && mongoose.Types.ObjectId.isValid(updateData.subCategory)) {
+      updateData.subCategory = updateData.subCategory;
+    }
+    if (typeof updateData.variants === 'string') {
+      try {
+        updateData.variants = JSON.parse(updateData.variants);
+      } catch (e) {
+        // If parsing fails, keep as is
+      }
+    }
+    if (typeof updateData.images === 'string') {
+      try {
+        updateData.images = JSON.parse(updateData.images);
+      } catch (e) {
+        // If parsing fails, treat as single image URL
+        updateData.images = [updateData.images];
+      }
+    }
+    
+    const previousProduct = existingProduct;
     const product = await updateProduct(id, updateData);
     
     // Check if stock was updated and trigger notifications
@@ -188,10 +309,11 @@ const updateProductService = async (req) => {
       data: product
     };
   } catch (error) {
+    console.error('Update product error:', error);
     return {
       success: false,
       statusCode: 500,
-      message: error.message
+      message: error.message || "Internal server error. Please try again later."
     };
   }
 };
