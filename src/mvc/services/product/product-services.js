@@ -141,6 +141,20 @@ const createProductService = async (req) => {
       };
     }
     
+    // Handle subCategory - convert empty strings to null, validate if provided
+    if (productData.subCategory !== undefined && productData.subCategory !== null) {
+      if (productData.subCategory === '' || productData.subCategory === 'null') {
+        // Remove empty subCategory or set to null
+        productData.subCategory = null;
+      } else if (!mongoose.Types.ObjectId.isValid(productData.subCategory)) {
+        return {
+          success: false,
+          message: "Invalid subCategory ID",
+          statusCode: 400
+        };
+      }
+    }
+    
     if (productData.basePrice === undefined || productData.basePrice === null) {
       return {
         success: false,
@@ -257,8 +271,17 @@ const updateProductService = async (req) => {
     if (typeof updateData.category === 'string' && mongoose.Types.ObjectId.isValid(updateData.category)) {
       updateData.category = updateData.category;
     }
-    if (typeof updateData.subCategory === 'string' && updateData.subCategory && mongoose.Types.ObjectId.isValid(updateData.subCategory)) {
-      updateData.subCategory = updateData.subCategory;
+    // Handle subCategory - convert empty strings to null, validate if provided
+    if (updateData.subCategory !== undefined && updateData.subCategory !== null) {
+      if (updateData.subCategory === '' || updateData.subCategory === 'null') {
+        updateData.subCategory = null;
+      } else if (typeof updateData.subCategory === 'string' && !mongoose.Types.ObjectId.isValid(updateData.subCategory)) {
+        return {
+          success: false,
+          message: "Invalid subCategory ID",
+          statusCode: 400
+        };
+      }
     }
     if (typeof updateData.variants === 'string') {
       try {

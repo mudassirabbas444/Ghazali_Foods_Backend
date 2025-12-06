@@ -37,45 +37,9 @@ const getProductController = async (req, res) => {
 
 const createProductController = async (req, res) => {
   try {
-    console.log('[createProductController] Request received:', {
-      method: req.method,
-      url: req.url,
-      hasFiles: !!req.files,
-      fileCount: req.files?.length || 0,
-      bodyKeys: Object.keys(req.body || {}),
-      userId: req.user?.id,
-      userEmail: req.user?.email,
-      contentType: req.headers['content-type']
-    });
-
-    if (req.files && req.files.length > 0) {
-      console.log('[createProductController] Files received:', req.files.map(f => ({
-        fieldname: f.fieldname,
-        originalname: f.originalname,
-        mimetype: f.mimetype,
-        size: f.size,
-        bufferLength: f.buffer?.length || 0
-      })));
-    } else {
-      console.log('[createProductController] No files in request');
-    }
-
     const result = await createProductService(req);
-    
-    console.log('[createProductController] Service response:', {
-      success: result.success,
-      statusCode: result.statusCode,
-      message: result.message,
-      hasData: !!result.data
-    });
-
     return res.status(result.statusCode).json(result);
   } catch (error) {
-    console.error('[createProductController] Unhandled error:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
     return res.status(500).json({
       success: false,
       message: error.message
