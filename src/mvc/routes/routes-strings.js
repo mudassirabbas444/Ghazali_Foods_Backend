@@ -125,4 +125,19 @@ export const productQuestionRoutes = {
     MARK_HELPFUL: "/:id/helpful",
 }
 
+export const notificationRoutes = {
+    CREATE: "/",
+    GET_USER_NOTIFICATIONS: "/",
+    GET_UNREAD_COUNT: "/unread-count",
+    MARK_AS_READ: "/:id/read",
+    MARK_ALL_AS_READ: "/read-all",
+    UPDATE: "/:id",
+    DELETE: "/:id",
+    DELETE_ALL: "/",
+    DELETE_READ: "/read",
+    GET_ALL: "/all", // Admin only
+    CREATE_BULK: "/bulk", // Admin only
+    CLEANUP: "/cleanup", // Admin only
+}
+
 
