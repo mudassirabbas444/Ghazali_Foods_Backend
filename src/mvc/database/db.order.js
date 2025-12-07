@@ -17,7 +17,7 @@ export const getOrderById = async (orderId) => {
     await ensureConnection();
     return await Order.findById(orderId)
       .populate('user', 'fullName email phone')
-      .populate('items.product', 'name images')
+      .populate('items.product', 'name images thumbnail')
       .populate('coupon', 'code discountType discountValue');
   } catch (error) {
     throw new Error("Error fetching order: " + error.message);
@@ -29,7 +29,7 @@ export const getOrderByNumber = async (orderNumber) => {
     await ensureConnection();
     return await Order.findOne({ orderNumber })
       .populate('user', 'fullName email phone')
-      .populate('items.product', 'name images')
+      .populate('items.product', 'name images thumbnail')
       .populate('coupon', 'code');
   } catch (error) {
     throw new Error("Error fetching order by number: " + error.message);
