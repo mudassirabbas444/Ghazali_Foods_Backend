@@ -4,7 +4,7 @@ import {
   createAnnouncementService,
   updateAnnouncementService,
   deleteAnnouncementService
-} from "../../services/announcement/announcement-services.js";
+} from "../../services/announcement/index.js";
 
 const getAnnouncementsController = async (req, res) => {
   try {
