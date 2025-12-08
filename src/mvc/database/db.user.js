@@ -184,13 +184,12 @@ export const getAllUsers = async (options = {}) => {
         // Build query with filters
         const query = {};
         
-        // Search filter (name, email, phone, refCode)
+        // Search filter (name, email, phone)
         if (options.search) {
             query.$or = [
                 { fullName: { $regex: options.search, $options: 'i' } },
                 { email: { $regex: options.search, $options: 'i' } },
-                { phone: { $regex: options.search, $options: 'i' } },
-                { refCode: { $regex: options.search, $options: 'i' } }
+                { phone: { $regex: options.search, $options: 'i' } }
             ];
         }
         

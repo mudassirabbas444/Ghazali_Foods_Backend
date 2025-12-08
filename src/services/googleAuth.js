@@ -63,7 +63,6 @@ export const authenticateWithGoogle = async (idToken) => {
           fullName: user.fullName,
           email: user.email,
           phone: user.phone,
-          refCode: user.refCode,
           isAdmin: user.isAdmin || false
         },
         token
@@ -94,7 +93,6 @@ export const authenticateWithGoogle = async (idToken) => {
             fullName: newUser.fullName,
             email: newUser.email,
             phone: newUser.phone,
-            refCode: newUser.refCode,
             isAdmin: newUser.isAdmin || false
           },
           token

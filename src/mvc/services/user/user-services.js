@@ -142,7 +142,6 @@ const loginUser = async (req) => {
                     name: user.fullName,
                     email: user.email,
                     phone: user.phone,
-                    refCode: user.refCode,
                     emailVerified: user.emailVerified
                 },
                 requiresVerification: true
@@ -166,13 +165,6 @@ const loginUser = async (req) => {
                 email: user.email,
                 phone: user.phone,
                 city: user.city,
-                refCode: user.refCode,
-                walletInfo: user.walletInfo,
-                totalInvestment: user.totalInvestment,
-                totalEarnings: user.totalEarnings,
-                availableBalance: user.availableBalance,
-                rank: user.rank,
-                teamCount: user.teamCount,
                 isActive: user.isActive,
                 isAdmin: user.isAdmin,
                 verified: user.verified,

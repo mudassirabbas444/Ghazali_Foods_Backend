@@ -3,8 +3,7 @@ import {
     getUserByEmail,
     getUserByPhone,
     comparePassword,
-    generateToken,
-    getUserByRefCode
+    generateToken
 } from "../../database/db.user.js";
 
 const registerUser = async (req) => {
