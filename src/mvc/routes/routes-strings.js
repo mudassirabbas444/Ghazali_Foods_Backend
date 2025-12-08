@@ -140,4 +140,12 @@ export const notificationRoutes = {
     CLEANUP: "/cleanup", // Admin only
 }
 
+export const announcementRoutes = {
+    GET_ANNOUNCEMENTS: "/",
+    GET_ANNOUNCEMENT: "/:id",
+    CREATE_ANNOUNCEMENT: "/",
+    UPDATE_ANNOUNCEMENT: "/:id",
+    DELETE_ANNOUNCEMENT: "/:id",
+}
+
 

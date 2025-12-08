@@ -13,6 +13,7 @@ import { reviewRouter } from "../mvc/routes/review/review.routes.js";
 import { stockNotificationRouter } from "../mvc/routes/stockNotification/stockNotification.routes.js";
 import { productQuestionRouter } from "../mvc/routes/productQuestion/productQuestion.routes.js";
 import { notificationRouter } from "../mvc/routes/notification/notification.routes.js";
+import { announcementRouter } from "../mvc/routes/announcement/announcement.routes.js";
 
 export default(app)=>{
     // Auth routes
@@ -37,4 +38,5 @@ export default(app)=>{
     app.use("/api/stock-notifications", stockNotificationRouter);
     app.use("/api/product-questions", productQuestionRouter);
     app.use("/api/notifications", notificationRouter);
+    app.use("/api/announcements", announcementRouter);
 }
