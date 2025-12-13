@@ -148,4 +148,13 @@ export const announcementRoutes = {
     DELETE_ANNOUNCEMENT: "/:id",
 }
 
+export const blogRoutes = {
+    GET_BLOGS: "/",
+    GET_BLOG: "/:id",
+    GET_BLOG_BY_SLUG: "/slug/:slug",
+    CREATE_BLOG: "/",
+    UPDATE_BLOG: "/:id",
+    DELETE_BLOG: "/:id",
+}
+
 
