@@ -4,6 +4,24 @@ import { ensureConnection } from '../../utils/waitForConnection.js';
 export const createBlog = async (blogData) => {
   try {
     await ensureConnection();
+    
+    // Ensure slug is generated if not provided
+    if (!blogData.slug && blogData.title) {
+      let baseSlug = blogData.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      
+      // Check for duplicate slugs and append number if needed
+      let slug = baseSlug;
+      let counter = 1;
+      while (await Blog.findOne({ slug })) {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+      blogData.slug = slug;
+    }
+    
     const blog = new Blog(blogData);
     return await blog.save();
   } catch (error) {

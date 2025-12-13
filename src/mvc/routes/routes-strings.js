@@ -59,6 +59,7 @@ export const orderRoutes = {
     GET_USER_ORDERS: "/my-orders",
     GET_ALL_ORDERS: "/",
     UPDATE_ORDER_STATUS: "/:id/status",
+    UPDATE_PAYMENT_STATUS: "/:id/payment-status",
     CANCEL_ORDER: "/:id/cancel",
     GET_ORDER_STATS: "/stats",
 }

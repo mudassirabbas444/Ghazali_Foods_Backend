@@ -152,6 +152,17 @@ export const updateOrderStatus = async (orderId, status, adminNotes = null) => {
   }
 };
 
+export const updatePaymentStatus = async (orderId, paymentStatus) => {
+  try {
+    await ensureConnection();
+    const updateData = { paymentStatus };
+    
+    return await updateOrder(orderId, updateData);
+  } catch (error) {
+    throw new Error("Error updating payment status: " + error.message);
+  }
+};
+
 export const cancelOrder = async (orderId, reason, cancelledBy = 'user') => {
   try {
     await ensureConnection();

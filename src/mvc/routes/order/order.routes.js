@@ -10,6 +10,7 @@ const router = express.Router();
 router.get(orderRoutes.GET_ORDER_STATS, auth, isAdmin, orderController.getOrderStatsController);
 router.get(orderRoutes.GET_ALL_ORDERS, auth, isAdmin, orderController.getAllOrdersController);
 router.put(orderRoutes.UPDATE_ORDER_STATUS, auth, isAdmin, orderController.updateOrderStatusController);
+router.put(orderRoutes.UPDATE_PAYMENT_STATUS, auth, isAdmin, orderController.updatePaymentStatusController);
 
 // User routes
 router.post(orderRoutes.CREATE_ORDER, auth, orderController.createOrderController);

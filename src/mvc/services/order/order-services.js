@@ -5,6 +5,7 @@ import {
   getUserOrders,
   getAllOrders,
   updateOrderStatus,
+  updatePaymentStatus,
   cancelOrder,
   getOrderStats
 } from "../../database/db.order.js";
@@ -443,6 +444,45 @@ const cancelOrderService = async (req) => {
   }
 };
 
+const updatePaymentStatusService = async (req) => {
+  try {
+    const { id } = req?.params;
+    const { paymentStatus } = req?.body;
+    
+    if (!paymentStatus) {
+      return {
+        success: false,
+        message: "Payment status is required",
+        statusCode: 400
+      };
+    }
+    
+    const validStatuses = ["pending", "paid", "failed", "refunded"];
+    if (!validStatuses.includes(paymentStatus)) {
+      return {
+        success: false,
+        message: "Invalid payment status",
+        statusCode: 400
+      };
+    }
+    
+    const order = await updatePaymentStatus(id, paymentStatus);
+    
+    return {
+      success: true,
+      message: "Payment status updated successfully",
+      statusCode: 200,
+      data: order
+    };
+  } catch (error) {
+    return {
+      success: false,
+      statusCode: 500,
+      message: error.message
+    };
+  }
+};
+
 const getOrderStatsService = async (req) => {
   try {
     // Calculate date range (last 30 days by default)
@@ -521,6 +561,7 @@ export default {
   getUserOrdersService,
   getAllOrdersService,
   updateOrderStatusService,
+  updatePaymentStatusService,
   cancelOrderService,
   getOrderStatsService
 };

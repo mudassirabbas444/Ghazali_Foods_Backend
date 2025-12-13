@@ -6,6 +6,7 @@ export const {
   getUserOrdersService,
   getAllOrdersService,
   updateOrderStatusService,
+  updatePaymentStatusService,
   cancelOrderService,
   getOrderStatsService
 } = orderServices;

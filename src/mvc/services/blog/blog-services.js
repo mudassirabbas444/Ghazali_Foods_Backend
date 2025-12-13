@@ -102,10 +102,40 @@ const getBlogBySlugService = async (req) => {
 
 const createBlogService = async (req) => {
   try {
-    const blogData = {
-      ...req?.body,
-      publishedAt: req?.body?.isPublished ? new Date() : undefined
-    };
+    const blogData = { ...req?.body };
+    
+    // Parse JSON fields from FormData
+    if (typeof blogData.tags === 'string') {
+      try {
+        blogData.tags = JSON.parse(blogData.tags);
+      } catch (e) {
+        blogData.tags = blogData.tags ? [blogData.tags] : [];
+      }
+    }
+    
+    // Handle image upload if provided
+    if (req?.file) {
+      const { uploadImage } = await import("../../../services/uploadService.js");
+      const uploadResult = await uploadImage(
+        req.file.buffer,
+        'blogs',
+        req.user?.id,
+        req.file.originalname
+      );
+      blogData.featuredImage = uploadResult.url;
+    }
+    
+    // Convert string booleans to actual booleans
+    if (typeof blogData.isPublished === 'string') {
+      blogData.isPublished = blogData.isPublished === 'true' || blogData.isPublished === 'on';
+    } else if (blogData.isPublished === undefined || blogData.isPublished === null) {
+      blogData.isPublished = false;
+    }
+    
+    // Set publishedAt if publishing
+    if (blogData.isPublished) {
+      blogData.publishedAt = new Date();
+    }
     
     const blog = await createBlog(blogData);
     
@@ -127,12 +157,36 @@ const createBlogService = async (req) => {
 const updateBlogService = async (req) => {
   try {
     const { id } = req?.params;
-    const updateData = {
-      ...req?.body,
-    };
+    const updateData = { ...req?.body };
+    
+    // Parse JSON fields from FormData
+    if (typeof updateData.tags === 'string') {
+      try {
+        updateData.tags = JSON.parse(updateData.tags);
+      } catch (e) {
+        updateData.tags = updateData.tags ? [updateData.tags] : [];
+      }
+    }
+    
+    // Handle image upload if provided
+    if (req?.file) {
+      const { uploadImage } = await import("../../../services/uploadService.js");
+      const uploadResult = await uploadImage(
+        req.file.buffer,
+        'blogs',
+        req.user?.id,
+        req.file.originalname
+      );
+      updateData.featuredImage = uploadResult.url;
+    }
+    
+    // Convert string booleans to actual booleans
+    if (typeof updateData.isPublished === 'string') {
+      updateData.isPublished = updateData.isPublished === 'true' || updateData.isPublished === 'on';
+    }
     
     // If publishing for the first time, set publishedAt
-    if (updateData.isPublished && !updateData.publishedAt) {
+    if (updateData.isPublished) {
       const existingBlog = await getBlogById(id);
       if (!existingBlog?.publishedAt) {
         updateData.publishedAt = new Date();

@@ -4,6 +4,7 @@ import {
   getUserOrdersService,
   getAllOrdersService,
   updateOrderStatusService,
+  updatePaymentStatusService,
   cancelOrderService,
   getOrderStatsService
 } from "../../services/order/index.js";
@@ -68,6 +69,18 @@ const updateOrderStatusController = async (req, res) => {
   }
 };
 
+const updatePaymentStatusController = async (req, res) => {
+  try {
+    const result = await updatePaymentStatusService(req);
+    return res.status(result.statusCode).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 const cancelOrderController = async (req, res) => {
   try {
     const result = await cancelOrderService(req);
@@ -104,6 +117,7 @@ export default {
   getUserOrdersController,
   getAllOrdersController,
   updateOrderStatusController,
+  updatePaymentStatusController,
   cancelOrderController,
   getOrderStatsController
 };
