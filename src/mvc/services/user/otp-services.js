@@ -111,12 +111,12 @@ const resendOTPService = async (req) => {
 
 const sendOTPEmail = async (email, name, otp) => {
     try {
-        const subject = "Verify Your Email - Dealistaan";
+        const subject = "Verify Your Email - Ghazali Foods";
         const html = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="text-align: center; margin-bottom: 30px;">
-                    <h1 style="color: #333; margin: 0;">Dealistaan</h1>
-                    <p style="color: #666; margin: 5px 0;">Your trusted marketplace</p>
+                    <h1 style="color: #333; margin: 0;">Ghazali Foods</h1>
+                    <p style="color: #666; margin: 5px 0;">Your trusted food marketplace</p>
                 </div>
                 
                 <div style="background: #f8f9fa; padding: 30px; border-radius: 10px; margin-bottom: 20px;">
@@ -125,7 +125,7 @@ const sendOTPEmail = async (email, name, otp) => {
                         Hello ${name},
                     </p>
                     <p style="color: #666; line-height: 1.6;">
-                        Thank you for registering with Dealistaan! To complete your registration, please verify your email address using the OTP below:
+                        Thank you for registering with Ghazali Foods! To complete your registration, please verify your email address using the OTP below:
                     </p>
                     
                     <div style="text-align: center; margin: 30px 0;">
@@ -140,7 +140,7 @@ const sendOTPEmail = async (email, name, otp) => {
                 </div>
                 
                 <div style="text-align: center; color: #999; font-size: 12px;">
-                    <p>© 2024 Dealistaan. All rights reserved.</p>
+                    <p>© 2024 Ghazali Foods. All rights reserved.</p>
                 </div>
             </div>
         `;

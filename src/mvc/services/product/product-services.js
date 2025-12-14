@@ -12,6 +12,31 @@ import {
 import { cleanupProductImages } from "../../../services/imageCleanup.js";
 import { checkAndNotifyStock } from "../stockNotification/index.js";
 
+// Helper function to calculate if product is out of stock
+const calculateIsOutOfStock = (product) => {
+  // Check base stock
+  if (product.stock > 0) {
+    return false;
+  }
+  
+  // Check variant stocks
+  if (product.variants && product.variants.length > 0) {
+    const hasStockInVariants = product.variants.some(variant => 
+      variant.stock > 0 && variant.isActive !== false
+    );
+    if (hasStockInVariants) {
+      return false;
+    }
+  }
+  
+  // If trackInventory is false, consider it in stock
+  if (product.trackInventory === false) {
+    return false;
+  }
+  
+  return true;
+};
+
 const getProducts = async (req) => {
   try {
     const options = {
@@ -32,11 +57,18 @@ const getProducts = async (req) => {
     
     const result = await getAllProducts(options);
     
+    // Add isOutOfStock field to each product
+    const productsWithStock = (result.products || []).map(product => {
+      const productObj = product.toObject ? product.toObject() : product;
+      productObj.isOutOfStock = calculateIsOutOfStock(product);
+      return productObj;
+    });
+    
     return {
       success: true,
       message: "Products fetched successfully",
       statusCode: 200,
-      products: result.products || [],
+      products: productsWithStock,
       pagination: {
         total: result.total || 0,
         page: result.page || 1,
@@ -88,11 +120,27 @@ const getProduct = async (req) => {
       };
     }
     
+    // Increment view count (only for non-admin users viewing active products)
+    if (product.isActive && (!req.user || !req.user.isAdmin)) {
+      try {
+        product.viewCount = (product.viewCount || 0) + 1;
+        await product.save();
+      } catch (viewError) {
+        console.error("Error incrementing view count:", viewError);
+        // Don't fail the request if view count update fails
+      }
+    }
+    
+    // Add isOutOfStock field
+    const isOutOfStock = calculateIsOutOfStock(product);
+    const productObj = product.toObject ? product.toObject() : product;
+    productObj.isOutOfStock = isOutOfStock;
+    
     return {
       success: true,
       message: "Product fetched successfully",
       statusCode: 200,
-      product: product
+      product: productObj
     };
   } catch (error) {
     return {
@@ -384,11 +432,18 @@ const getFeaturedProducts = async (req) => {
     
     const result = await getAllProducts(options);
     
+    // Add isOutOfStock field to each product
+    const productsWithStock = (result.products || []).map(product => {
+      const productObj = product.toObject ? product.toObject() : product;
+      productObj.isOutOfStock = calculateIsOutOfStock(product);
+      return productObj;
+    });
+    
     return {
       success: true,
       message: "Featured products fetched successfully",
       statusCode: 200,
-      products: result.products || []
+      products: productsWithStock
     };
   } catch (error) {
     return {
@@ -410,11 +465,18 @@ const getBestSellers = async (req) => {
     
     const result = await getAllProducts(options);
     
+    // Add isOutOfStock field to each product
+    const productsWithStock = (result.products || []).map(product => {
+      const productObj = product.toObject ? product.toObject() : product;
+      productObj.isOutOfStock = calculateIsOutOfStock(product);
+      return productObj;
+    });
+    
     return {
       success: true,
       message: "Best sellers fetched successfully",
       statusCode: 200,
-      products: result.products || []
+      products: productsWithStock
     };
   } catch (error) {
     return {
@@ -437,11 +499,18 @@ const getNewArrivals = async (req) => {
     
     const result = await getAllProducts(options);
     
+    // Add isOutOfStock field to each product
+    const productsWithStock = (result.products || []).map(product => {
+      const productObj = product.toObject ? product.toObject() : product;
+      productObj.isOutOfStock = calculateIsOutOfStock(product);
+      return productObj;
+    });
+    
     return {
       success: true,
       message: "New arrivals fetched successfully",
       statusCode: 200,
-      products: result.products || []
+      products: productsWithStock
     };
   } catch (error) {
     return {

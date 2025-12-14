@@ -17,6 +17,13 @@ import { env } from "../../../config/env.js";
 import Order from "../../models/Order.js";
 import User from "../../models/User.js";
 import Product from "../../models/Product.js";
+import {
+  generateOrderConfirmationEmail,
+  generateOrderStatusUpdateEmail,
+  generateAdminOrderNotificationEmail,
+  generateAdminOrderStatusUpdateEmail,
+  ADMIN_EMAIL
+} from "../../../utils/emailTemplates.js";
 
 const createOrderService = async (req) => {
   try {
@@ -155,28 +162,30 @@ const createOrderService = async (req) => {
     // Clear cart
     await clearCart(userId);
     
-    // Send order confirmation email
+    // Get populated order for email
+    const populatedOrder = await getOrderById(order._id);
+    
+    // Send order confirmation emails to user and admin
     try {
       const user = await User.findById(userId);
       if (user && user.email) {
+        // Send email to user
         await sendEmail({
           to: user.email,
           subject: `Order Confirmation - ${order.orderNumber}`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>Order Confirmed!</h2>
-              <p>Your order <strong>${order.orderNumber}</strong> has been placed successfully.</p>
-              <p>Total Amount: $${order.total}</p>
-              <p>We'll notify you once your order is shipped.</p>
-            </div>
-          `
+          html: generateOrderConfirmationEmail(populatedOrder, user)
+        });
+        
+        // Send email to admin
+        await sendEmail({
+          to: ADMIN_EMAIL,
+          subject: `New Order Received - ${order.orderNumber}`,
+          html: generateAdminOrderNotificationEmail(populatedOrder, user)
         });
       }
     } catch (emailError) {
-      console.error("Error sending order confirmation email:", emailError);
+      console.error("Error sending order confirmation emails:", emailError);
     }
-    
-    const populatedOrder = await getOrderById(order._id);
     
     return {
       success: true,
@@ -325,28 +334,34 @@ const updateOrderStatusService = async (req) => {
       };
     }
     
+    // Get previous status before updating
+    const previousOrder = await getOrderById(id);
+    const previousStatus = previousOrder ? previousOrder.status : null;
+    
     const order = await updateOrderStatus(id, status, adminNotes);
     
-    // Send notification email if delivered
-    if (status === 'delivered') {
-      try {
-        const populatedOrder = await getOrderById(id);
-        if (populatedOrder.user && populatedOrder.user.email) {
-          await sendEmail({
-            to: populatedOrder.user.email,
-            subject: `Order Delivered - ${order.orderNumber}`,
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2>Order Delivered!</h2>
-                <p>Your order <strong>${order.orderNumber}</strong> has been delivered.</p>
-                <p>Thank you for shopping with us!</p>
-              </div>
-            `
-          });
-        }
-      } catch (emailError) {
-        console.error("Error sending delivery email:", emailError);
+    // Get populated order for email
+    const populatedOrder = await getOrderById(id);
+    
+    // Send notification emails to user and admin for all status changes
+    try {
+      if (populatedOrder.user && populatedOrder.user.email) {
+        // Send email to user
+        await sendEmail({
+          to: populatedOrder.user.email,
+          subject: `Order Status Update - ${order.orderNumber}`,
+          html: generateOrderStatusUpdateEmail(populatedOrder, populatedOrder.user, previousStatus)
+        });
+        
+        // Send email to admin
+        await sendEmail({
+          to: ADMIN_EMAIL,
+          subject: `Order Status Updated - ${order.orderNumber}`,
+          html: generateAdminOrderStatusUpdateEmail(populatedOrder, populatedOrder.user, previousStatus)
+        });
       }
+    } catch (emailError) {
+      console.error("Error sending order status update emails:", emailError);
     }
     
     return {

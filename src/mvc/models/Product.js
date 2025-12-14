@@ -57,6 +57,9 @@ const productSchema = new mongoose.Schema(
     
     // Display order
     displayOrder: { type: Number, default: 0 },
+    
+    // View tracking
+    viewCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

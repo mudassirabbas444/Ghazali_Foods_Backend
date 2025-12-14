@@ -59,11 +59,11 @@ export const sendPasswordResetEmail = async (req) => {
     // Email content
     const emailContent = {
       to: user.email,
-      subject: 'Password Reset Request - Dealistaan',
+      subject: 'Password Reset Request - Ghazali Foods',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">Dealistaan</h1>
+            <h1 style="color: white; margin: 0; font-size: 28px;">Ghazali Foods</h1>
             <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Password Reset Request</p>
           </div>
           
@@ -71,7 +71,7 @@ export const sendPasswordResetEmail = async (req) => {
             <h2 style="color: #333; margin-top: 0;">Hello ${user.fullName || user.email},</h2>
             
             <p style="color: #666; line-height: 1.6;">
-              We received a request to reset your password for your Dealistaan account. 
+              We received a request to reset your password for your Ghazali Foods account. 
               If you didn't make this request, you can safely ignore this email.
             </p>
             
@@ -196,11 +196,11 @@ export const resetPassword = async (req) => {
     // Send confirmation email
     const emailContent = {
       to: user.email,
-      subject: 'Password Reset Successful - Dealistaan',
+      subject: 'Password Reset Successful - Ghazali Foods',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">Dealistaan</h1>
+            <h1 style="color: white; margin: 0; font-size: 28px;">Ghazali Foods</h1>
             <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Password Reset Successful</p>
           </div>
           
