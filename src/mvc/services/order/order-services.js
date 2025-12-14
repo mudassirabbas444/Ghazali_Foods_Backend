@@ -28,7 +28,7 @@ import {
 const createOrderService = async (req) => {
   try {
     const userId = req?.user?.id;
-    const { shippingAddress, paymentMethod, deliveryCharges = 200 } = req?.body;
+    const { shippingAddress, paymentMethod, deliveryCharges } = req?.body;
     
     if (!shippingAddress || !paymentMethod) {
       return {
@@ -60,6 +60,10 @@ const createOrderService = async (req) => {
     
     // Calculate totals
     const totals = cart.calculateTotals();
+    
+    // Calculate delivery charges: Free for orders above 2500, otherwise 240
+    const orderTotal = totals.subtotal - totals.discount;
+    const calculatedDeliveryCharges = orderTotal >= 2500 ? 0 : (deliveryCharges || 240);
     
     // Prepare order items
     const orderItems = [];
@@ -123,10 +127,10 @@ const createOrderService = async (req) => {
       },
       items: orderItems,
       subtotal: totals.subtotal,
-      deliveryCharges: deliveryCharges || 200,
+      deliveryCharges: calculatedDeliveryCharges,
       discount: totals.discount || 0,
       coupon: cart.coupon?._id || cart.coupon || null,
-      total: totals.total + (deliveryCharges || 200),
+      total: totals.total + calculatedDeliveryCharges + 1, // Add 1 rupee FBR POS charges
       paymentMethod,
       paymentStatus: paymentMethod === 'cod' ? 'pending' : 'pending',
       status: 'pending'
