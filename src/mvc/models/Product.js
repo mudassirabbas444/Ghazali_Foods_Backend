@@ -23,6 +23,8 @@ const productSchema = new mongoose.Schema(
     // Images
     images: { type: [String], default: [] }, // Array of image URLs
     thumbnail: { type: String },
+    // Optional product video URL (stored in Firebase)
+    videoUrl: { type: String },
     
     // Pricing (base price - can be overridden by variants)
     basePrice: { type: Number, required: true },

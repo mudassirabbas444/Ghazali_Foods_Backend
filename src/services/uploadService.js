@@ -8,16 +8,25 @@ const storage = multer.memoryStorage();
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    // Increase limit to support videos as well (up to ~50MB)
+    fileSize: 50 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (allowedTypes.includes(file.mimetype)) {
+    // Allow any standard image or video MIME type
+    if (
+      file.mimetype?.startsWith('image/') ||
+      file.mimetype?.startsWith('video/')
+    ) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only JPEG, PNG, and WebP images are allowed.'), false);
+      cb(
+        new Error(
+          'Invalid file type. Only image and video files are allowed.'
+        ),
+        false
+      );
     }
-  }
+  },
 });
 
 /**
@@ -168,6 +177,10 @@ const getContentType = (extension) => {
     '.jpeg': 'image/jpeg',
     '.png': 'image/png',
     '.webp': 'image/webp',
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm',
+    '.ogg': 'video/ogg',
+    '.mov': 'video/quicktime',
     '.pdf': 'application/pdf',
   };
   return types[extension.toLowerCase()] || 'application/octet-stream';
