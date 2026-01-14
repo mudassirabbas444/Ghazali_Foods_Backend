@@ -1,100 +1,33 @@
-import mongoose from "mongoose";
-
-// Connection state names for logging
-const connectionStateNames = {
-    0: 'disconnected',
-    1: 'connected',
-    2: 'connecting',
-    3: 'disconnecting'
-};
-
-const getConnectionState = () => {
-    const state = mongoose.connection.readyState;
-    return `${state} (${connectionStateNames[state] || 'unknown'})`;
-};
-
 /**
- * Wait for MongoDB connection to be established
- * @param {number} maxWaitTime - Maximum time to wait in milliseconds (default: 30000)
- * @returns {Promise<boolean>} - Returns true if connected, false if timeout
+ * MongoDB Connection Utilities for Vercel Serverless
+ * 
+ * ✅ Vercel-compatible: Uses connectDB() which handles caching
+ * ❌ NOT ALLOWED: setTimeout polling (not allowed in serverless)
  */
-export const waitForConnection = async (maxWaitTime = 30000) => {
-    const startTime = Date.now();
-    const initialState = mongoose.connection.readyState;
-    
-    console.log(`[${new Date().toISOString()}] ⏳ waitForConnection: Starting wait (max: ${maxWaitTime}ms)`);
-    console.log(`[${new Date().toISOString()}] 📊 Initial connection state: ${getConnectionState()}`);
-    
-    // If already connected, return immediately
-    if (initialState === 1) {
-        console.log(`[${new Date().toISOString()}] ✅ Already connected, returning immediately`);
-        return true;
-    }
-    
-    // Wait for connection
-    return new Promise((resolve) => {
-        let checkCount = 0;
-        const checkConnection = () => {
-            checkCount++;
-            const currentState = mongoose.connection.readyState;
-            const elapsed = Date.now() - startTime;
-            
-            if (checkCount % 10 === 0 || currentState === 1) {
-                console.log(`[${new Date().toISOString()}] 🔍 Check #${checkCount}: State=${getConnectionState()}, Elapsed=${elapsed}ms`);
-            }
-            
-            if (currentState === 1) {
-                console.log(`[${new Date().toISOString()}] ✅ Connection established after ${elapsed}ms (${checkCount} checks)`);
-                resolve(true);
-                return;
-            }
-            
-            // Check if timeout
-            if (elapsed > maxWaitTime) {
-                console.error(`[${new Date().toISOString()}] ❌ Connection timeout after ${elapsed}ms (${checkCount} checks)`);
-                console.error(`[${new Date().toISOString()}] 📊 Final state: ${getConnectionState()}`);
-                resolve(false);
-                return;
-            }
-            
-            // Check again in 100ms
-            setTimeout(checkConnection, 100);
-        };
-        
-        checkConnection();
-    });
-};
+
+import { connectDB } from '../init/db.js';
 
 /**
  * Ensure MongoDB is connected before proceeding
+ * Uses the cached connection pattern from connectDB()
  * @throws {Error} If connection cannot be established
  */
 export const ensureConnection = async () => {
     const startTime = Date.now();
-    const initialState = mongoose.connection.readyState;
     
-    console.log(`[${new Date().toISOString()}] 🔒 ensureConnection: Checking connection before query`);
-    console.log(`[${new Date().toISOString()}] 📊 Current state: ${getConnectionState()}`);
+    console.log(`[${new Date().toISOString()}] 🔒 ensureConnection: Ensuring MongoDB connection`);
     
-    if (initialState === 1) {
-        console.log(`[${new Date().toISOString()}] ✅ Connection verified, proceeding with query`);
-        return; // Already connected
-    }
-    
-    console.log(`[${new Date().toISOString()}] ⏳ Connection not ready, waiting up to 15 seconds...`);
-    
-    // Wait up to 15 seconds for connection (increased for Vercel serverless cold starts)
-    const connected = await waitForConnection(15000);
-    
-    if (!connected) {
-        const finalState = mongoose.connection.readyState;
+    try {
+        // Use connectDB() which handles caching and connection
+        await connectDB();
+        
         const elapsed = Date.now() - startTime;
-        const errorMsg = `MongoDB is not connected after ${elapsed}ms. Connection state: ${getConnectionState()}. Please ensure the database connection is established before executing queries.`;
+        console.log(`[${new Date().toISOString()}] ✅ Connection ensured after ${elapsed}ms, proceeding with query`);
+    } catch (error) {
+        const elapsed = Date.now() - startTime;
+        const errorMsg = `MongoDB connection failed after ${elapsed}ms: ${error.message}`;
         console.error(`[${new Date().toISOString()}] ❌ ${errorMsg}`);
         throw new Error(errorMsg);
     }
-    
-    const elapsed = Date.now() - startTime;
-    console.log(`[${new Date().toISOString()}] ✅ Connection ensured after ${elapsed}ms, proceeding with query`);
 };
 

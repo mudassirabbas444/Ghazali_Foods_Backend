@@ -94,29 +94,35 @@ app.get('/api/health/db', (req, res) => {
 routes(app);
 
 
-// Start server immediately (don't wait for DB connection)
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Environment: ${env.NODE_ENV}`);
-    console.log(`Socket.IO server is ready for connections`);
-    
-    // Connect to database after server starts
-    connectDB().then(() => {
-        console.log('Database connected successfully');
+// Traditional server (Railway, local): Start server and connect DB
+// On Vercel, this code won't run - Vercel uses the exported app directly
+if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
+    server.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server is running on port ${PORT}`);
+        console.log(`Environment: ${env.NODE_ENV}`);
+        console.log(`Socket.IO server is ready for connections`);
         
-    }).catch((error) => {
-        console.error('Database connection failed:', error);
-        // Don't exit - let server run without DB for debugging
+        // Connect to database after server starts (non-blocking)
+        connectDB().then(() => {
+            console.log('Database connected successfully');
+        }).catch((error) => {
+            console.error('Database connection failed:', error);
+            // Don't exit - let server run without DB for debugging
+        });
+    }).on('error', (error) => {
+        if (error.code === 'EADDRINUSE') {
+            console.error(`❌ Port ${PORT} is already in use.`);
+            console.error(`   Please stop the process using port ${PORT} or change the PORT in .env`);
+            console.error(`   To find the process: netstat -ano | findstr :${PORT}`);
+            console.error(`   To kill it: taskkill /F /PID <PID>`);
+            process.exit(1);
+        } else {
+            console.error('❌ Server error:', error);
+            process.exit(1);
+        }
     });
-}).on('error', (error) => {
-    if (error.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use.`);
-        console.error(`   Please stop the process using port ${PORT} or change the PORT in .env`);
-        console.error(`   To find the process: netstat -ano | findstr :${PORT}`);
-        console.error(`   To kill it: taskkill /F /PID <PID>`);
-        process.exit(1);
-    } else {
-        console.error('❌ Server error:', error);
-        process.exit(1);
-    }
-});
+}
+
+// Export app for Vercel (required by @vercel/node)
+// On Vercel, connection will be established on first request via connectDB() in each route
+export default app;

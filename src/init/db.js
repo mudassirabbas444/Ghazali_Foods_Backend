@@ -1,149 +1,115 @@
+/**
+ * MongoDB Connection for Vercel Serverless
+ * 
+ * ✅ Vercel-compatible:
+ * - Uses cached connection pattern (global.mongoose)
+ * - No setTimeout retries (not allowed in serverless)
+ * - No event listeners (repeatedly attached on each request)
+ * - No reconnection logic (serverless functions are stateless)
+ * 
+ * ❌ NOT ALLOWED ON VERCEL:
+ * - setTimeout(connectionWithRetry, 5000) - Background retry
+ * - mongoose.connection.on(...) - Event listeners
+ * - Reconnection logic - Process terminates after request
+ */
+
 import mongoose from "mongoose";
 import { env, isDevelopment } from "../config/env.js";
 
-if(isDevelopment()){
-    mongoose.set("debug",true);
+// Enable debug mode in development
+if (isDevelopment()) {
+    mongoose.set("debug", true);
 }
 
-// Connection state names for logging
-const connectionStateNames = {
-    0: 'disconnected',
-    1: 'connected',
-    2: 'connecting',
-    3: 'disconnecting'
-};
+// Cache connection globally (works across Vercel serverless function invocations)
+let cached = global.mongoose;
 
-const getConnectionState = () => {
-    const state = mongoose.connection.readyState;
-    return `${state} (${connectionStateNames[state] || 'unknown'})`;
-};
+if (!cached) {
+    cached = global.mongoose = {
+        conn: null,
+        promise: null,
+    };
+}
 
-const connectDB=async()=>{
+/**
+ * Connect to MongoDB with caching for Vercel serverless
+ * @returns {Promise<mongoose.Connection>} MongoDB connection
+ */
+export async function connectDB() {
     const startTime = Date.now();
-    console.log(`[${new Date().toISOString()}] 🔌 Starting MongoDB connection process...`);
-    console.log(`[${new Date().toISOString()}] 📍 Environment: ${env.NODE_ENV}`);
-    console.log(`[${new Date().toISOString()}] 🔗 Current connection state: ${getConnectionState()}`);
-   
-    if(!env.MONGODB_URI){
-        console.error(`[${new Date().toISOString()}] ❌ MONGODB_URI is not defined in environment variables`);
-        throw new Error("MONGODB_URI is not defined in environment variables");
+    
+    // Return cached connection if available
+    if (cached.conn) {
+        console.log(`[${new Date().toISOString()}] ✅ Using cached MongoDB connection`);
+        return cached.conn;
     }
 
-    // Log connection string info (masked in production)
-    if(isDevelopment()) {
+    // Validate MONGODB_URI
+    if (!env.MONGODB_URI) {
+        const error = "❌ MONGODB_URI is not defined in environment variables";
+        console.error(`[${new Date().toISOString()}] ${error}`);
+        throw new Error(error);
+    }
+
+    // Log connection info (masked in production)
+    if (isDevelopment()) {
+        console.log(`[${new Date().toISOString()}] 🔌 Connecting to MongoDB...`);
         console.log(`[${new Date().toISOString()}] 🔑 MONGO_URI: ${env.MONGODB_URI}`);
     } else {
         const uriParts = env.MONGODB_URI?.split('@');
         if (uriParts && uriParts.length > 1) {
             const hostPart = uriParts[1].split('/')[0];
+            console.log(`[${new Date().toISOString()}] 🔌 Connecting to MongoDB...`);
             console.log(`[${new Date().toISOString()}] 🔑 MONGO_URI: ***@${hostPart}`);
         } else {
-            console.log(`[${new Date().toISOString()}] 🔑 MONGO_URI: Set (hidden for security)`);
+            console.log(`[${new Date().toISOString()}] 🔌 Connecting to MongoDB...`);
         }
     }
 
-    const connectionOptions={
-        serverSelectionTimeoutMS:30000, // Increased to 30 seconds
-        socketTimeoutMS:45000, // Increased to 45 seconds
-        connectTimeoutMS:30000, // Increased to 30 seconds
-        maxPoolSize:10,
-        // minPoolSize removed for Vercel serverless compatibility
-        // Serverless functions can't maintain minimum pool size
-    };
+    // Create connection promise if not exists (prevents multiple simultaneous connections)
+    if (!cached.promise) {
+        const connectionOptions = {
+            bufferCommands: false, // Disable mongoose buffering (serverless-friendly)
+            maxPoolSize: 10, // Maximum connections in pool
+            serverSelectionTimeoutMS: 10000, // 10 seconds timeout
+            socketTimeoutMS: 45000, // 45 seconds socket timeout
+            connectTimeoutMS: 10000, // 10 seconds connection timeout
+        };
 
-    console.log(`[${new Date().toISOString()}] ⚙️  Connection options:`, {
-        serverSelectionTimeoutMS: connectionOptions.serverSelectionTimeoutMS,
-        socketTimeoutMS: connectionOptions.socketTimeoutMS,
-        connectTimeoutMS: connectionOptions.connectTimeoutMS,
-        maxPoolSize: connectionOptions.maxPoolSize
-    });
-
-    let reconnecting=false;
-    let attemptCount = 0;
-    
-    const connectionWithRetry=async()=>{
-        attemptCount++;
-        const attemptStartTime = Date.now();
-        console.log(`[${new Date().toISOString()}] 🔄 Attempt #${attemptCount} to connect to MongoDB...`);
-        console.log(`[${new Date().toISOString()}] 📊 Connection state before attempt: ${getConnectionState()}`);
-        
-        try{
-            const connectPromise = mongoose.connect(env.MONGODB_URI,connectionOptions);
-            console.log(`[${new Date().toISOString()}] ⏳ Waiting for connection (timeout: ${connectionOptions.connectTimeoutMS}ms)...`);
-            
-            await connectPromise;
-            
-            const connectionTime = Date.now() - attemptStartTime;
-            console.log(`[${new Date().toISOString()}] ✅ MongoDB connected successfully in ${connectionTime}ms`);
-            console.log(`[${new Date().toISOString()}] 📊 Connection state: ${getConnectionState()}`);
-            console.log(`[${new Date().toISOString()}] 🗄️  Database: ${mongoose.connection.db?.databaseName || 'unknown'}`);
-            console.log(`[${new Date().toISOString()}] 🌐 Host: ${mongoose.connection.host || 'unknown'}`);
-            console.log(`[${new Date().toISOString()}] 🔌 Port: ${mongoose.connection.port || 'unknown'}`);
-            console.log(`[${new Date().toISOString()}] ⏱️  Total connection time: ${Date.now() - startTime}ms`);
-        }
-        catch(err){
-            const errorTime = Date.now() - attemptStartTime;
-            console.error(`[${new Date().toISOString()}] ❌ MongoDB connection error after ${errorTime}ms:`);
-            console.error(`[${new Date().toISOString()}]    Error name: ${err.name}`);
-            console.error(`[${new Date().toISOString()}]    Error message: ${err.message}`);
-            console.error(`[${new Date().toISOString()}]    Error code: ${err.code || 'N/A'}`);
-            if (err.reason) {
-                console.error(`[${new Date().toISOString()}]    Error reason: ${err.reason}`);
-            }
-            console.log(`[${new Date().toISOString()}] 📊 Connection state after error: ${getConnectionState()}`);
-            console.log(`[${new Date().toISOString()}] 🔄 Retrying in 5 seconds...`);
-            setTimeout(connectionWithRetry,5000);
-        }
-    }
-
-    // Set up event listeners with detailed logging
-    mongoose.connection.on("connecting", () => {
-        console.log(`[${new Date().toISOString()}] 🔄 MongoDB connecting...`);
-    });
-
-    mongoose.connection.on("connected", () => {
-        console.log(`[${new Date().toISOString()}] ✅ MongoDB connected event fired`);
-        console.log(`[${new Date().toISOString()}] 📊 Connection state: ${getConnectionState()}`);
-    });
-
-    mongoose.connection.on("open", () => {
-        console.log(`[${new Date().toISOString()}] 🟢 MongoDB connection opened`);
-    });
-
-    mongoose.connection.on("error", (err) => {
-        console.error(`[${new Date().toISOString()}] ❌ MongoDB connection error event:`, err.message);
-        console.error(`[${new Date().toISOString()}]    Error details:`, {
-            name: err.name,
-            message: err.message,
-            code: err.code
+        console.log(`[${new Date().toISOString()}] ⚙️  Connection options:`, {
+            bufferCommands: connectionOptions.bufferCommands,
+            maxPoolSize: connectionOptions.maxPoolSize,
+            serverSelectionTimeoutMS: connectionOptions.serverSelectionTimeoutMS,
+            socketTimeoutMS: connectionOptions.socketTimeoutMS,
+            connectTimeoutMS: connectionOptions.connectTimeoutMS,
         });
-    });
 
-    mongoose.connection.on("disconnected", () => {
-        console.log(`[${new Date().toISOString()}] ⚠️  MongoDB disconnected`);
-        console.log(`[${new Date().toISOString()}] 📊 Connection state: ${getConnectionState()}`);
-        if(!reconnecting){
-            reconnecting=true;
-            console.log(`[${new Date().toISOString()}] 🔄 Attempting to reconnect to MongoDB...`);
-            connectionWithRetry().finally(()=>{
-                reconnecting=false;
-                console.log(`[${new Date().toISOString()}] 🔄 Reconnection attempt completed`);
+        cached.promise = mongoose
+            .connect(env.MONGODB_URI, connectionOptions)
+            .then((mongoose) => {
+                const connectionTime = Date.now() - startTime;
+                console.log(`[${new Date().toISOString()}] ✅ MongoDB connected successfully in ${connectionTime}ms`);
+                console.log(`[${new Date().toISOString()}] 🗄️  Database: ${mongoose.connection.db?.databaseName || 'unknown'}`);
+                console.log(`[${new Date().toISOString()}] 🌐 Host: ${mongoose.connection.host || 'unknown'}`);
+                return mongoose;
+            })
+            .catch((error) => {
+                const errorTime = Date.now() - startTime;
+                console.error(`[${new Date().toISOString()}] ❌ MongoDB connection failed after ${errorTime}ms`);
+                console.error(`[${new Date().toISOString()}]    Error: ${error.message}`);
+                // Clear promise on error so next request can retry
+                cached.promise = null;
+                throw error;
             });
-        }
-    });
+    }
 
-    mongoose.connection.on("reconnected", () => {
-        console.log(`[${new Date().toISOString()}] ✅ MongoDB reconnected`);
-    });
-
-    mongoose.connection.on("close", () => {
-        console.log(`[${new Date().toISOString()}] 🔴 MongoDB connection closed`);
-    });
-
-    await connectionWithRetry();
-    
-    // Log final connection status
-    console.log(`[${new Date().toISOString()}] 🎯 Connection process completed. Final state: ${getConnectionState()}`);
+    // Wait for connection promise
+    try {
+        cached.conn = await cached.promise;
+        return cached.conn;
+    } catch (error) {
+        // Clear cached promise on error
+        cached.promise = null;
+        throw error;
+    }
 }
-
-export { connectDB };
