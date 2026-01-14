@@ -47,15 +47,15 @@ const connectDB=async()=>{
         socketTimeoutMS:45000, // Increased to 45 seconds
         connectTimeoutMS:30000, // Increased to 30 seconds
         maxPoolSize:10,
-        minPoolSize:5
+        // minPoolSize removed for Vercel serverless compatibility
+        // Serverless functions can't maintain minimum pool size
     };
 
     console.log(`[${new Date().toISOString()}] ⚙️  Connection options:`, {
         serverSelectionTimeoutMS: connectionOptions.serverSelectionTimeoutMS,
         socketTimeoutMS: connectionOptions.socketTimeoutMS,
         connectTimeoutMS: connectionOptions.connectTimeoutMS,
-        maxPoolSize: connectionOptions.maxPoolSize,
-        minPoolSize: connectionOptions.minPoolSize
+        maxPoolSize: connectionOptions.maxPoolSize
     });
 
     let reconnecting=false;

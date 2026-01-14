@@ -81,10 +81,10 @@ export const ensureConnection = async () => {
         return; // Already connected
     }
     
-    console.log(`[${new Date().toISOString()}] ⏳ Connection not ready, waiting up to 5 seconds...`);
+    console.log(`[${new Date().toISOString()}] ⏳ Connection not ready, waiting up to 15 seconds...`);
     
-    // Wait up to 5 seconds for connection
-    const connected = await waitForConnection(5000);
+    // Wait up to 15 seconds for connection (increased for Vercel serverless cold starts)
+    const connected = await waitForConnection(15000);
     
     if (!connected) {
         const finalState = mongoose.connection.readyState;
